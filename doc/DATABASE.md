@@ -1,4 +1,6 @@
-# Better Auth 1.7.16 upgrade
+# Database
+
+### Better Auth 1.7.16 upgrade
 
 Better Auth 1.7.3 and later identify accounts by `provider_id` and `account_id`.
 They no longer write the `issuer` column that 1.7.0–1.7.2 required. Apply the
@@ -20,8 +22,6 @@ Resolve any duplicates before migration. Keep different users separate. A duplic
 causes index creation to fail rather than leaving an ambiguous login identity.
 Do not restore the issuer `NOT NULL` constraint on rollback while new rows have
 null issuers. See the [Better Auth upgrade guide](https://better-auth.com/docs/guides/1-7-upgrade-guide).
-
-# Database
 
 ### Proactive agent chat messages
 

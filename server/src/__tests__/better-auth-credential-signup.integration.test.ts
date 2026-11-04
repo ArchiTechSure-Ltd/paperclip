@@ -124,7 +124,7 @@ describeEmbeddedPostgres("Better Auth credential sign-up against the real schema
     expect(legacySignIn.body?.user?.email).toBe(EMAIL);
 
     await expect(db.insert(authAccounts).values({ ...accounts[0]!, id: "duplicate-credential" }))
-      .rejects.toThrow();
+      .rejects.toMatchObject({ cause: { code: "23505", constraint_name: "account_provider_account_id_uq" } });
     await db.insert(authAccounts).values({ ...accounts[0]!, id: "other-provider", providerId: "other" });
   });
 });
