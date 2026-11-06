@@ -32,7 +32,7 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { browserName: "chromium" } }],
   webServer: {
     cwd: path.resolve(import.meta.dirname, "../.."),
-    command: "node cli/node_modules/tsx/dist/cli.mjs cli/src/index.ts onboard --yes --bind lan --run",
+    command: "pnpm --filter @paperclipai/ui build --outDir ../server/ui-dist --emptyOutDir && node cli/node_modules/tsx/dist/cli.mjs cli/src/index.ts onboard --yes --bind lan --run",
     url: `${BASE_URL}/api/health`,
     reuseExistingServer: false,
     timeout: 300_000,
