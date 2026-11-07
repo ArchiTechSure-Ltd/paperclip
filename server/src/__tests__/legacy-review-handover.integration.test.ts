@@ -108,8 +108,15 @@ describe.each(["agent_jwt", "agent_key"] as const)("legacy review handover assem
         { authorization: `Bearer ${engineerKey}`, "x-paperclip-run-id": otherRun.id },
         { authorization: "Bearer invalid-fixture-key", "x-paperclip-run-id": otherRun.id },
       ]) {
+        const requestHeaders: Record<string, string> = {
+          authorization: headers.authorization,
+          "content-type": "application/json",
+        };
+        if (headers["x-paperclip-run-id"] !== undefined) {
+          requestHeaders["x-paperclip-run-id"] = headers["x-paperclip-run-id"];
+        }
         const response = await fetch(`${api}/api/issues/${taskId}`, { method: "PATCH",
-          headers: { ...headers, "content-type": "application/json" },
+          headers: requestHeaders,
           body: JSON.stringify({ status: "done", comment: "Unauthorized handover attempt." }) });
         expect(response.status, JSON.stringify(await response.json())).toBeGreaterThanOrEqual(400);
         expect((await db.select().from(issues).where(eq(issues.id, taskId)))[0]).toMatchObject({ status: "todo", executionState: null });
