@@ -4583,3 +4583,51 @@ A restored task shows its header and properties while uncached history is still 
 Query-cache cleanup snapshots storage keys before deletion because native storage can reorder them as records are removed. Flush cleanup affects only its owning account and yields if another account becomes active.
 
 Run `pnpm exec playwright test -c tests/e2e/playwright.config.ts tests/e2e/disconnect-resilience.spec.ts` for the built-UI outage regressions. The suite uses fresh isolated local data, 20-second API interceptions, and a controlled sign-out session response. It covers retained tasks, comment and document recovery, queued-comment reloads, cached settings/sidebar/task reads, legacy Inbox reloads, real error status handling and sign-out clearing across several company records. The existing CI e2e shards discover it automatically. A real hosted restart or deploy remains a separate acceptance check.
+
+### Legacy policy review handovers
+
+A legacy agent can submit its own active task for policy review without cancelling
+the HTTP request that records the submission. The provider must still finish.
+The issue transition retains the next stage wake in `agent_wakeup_requests` in the
+same transaction. The existing deferred-receipt worker delivers that wake after
+source execution and environment cleanup settle. It rechecks the stage, decision
+and participant under the issue lock. A restart uses the same saved receipt.
+
+For an existing resolved `legacy_execution_requires_reconciliation` action with
+a no-replay hold, a board operator can use the existing resolution endpoint:
+
+```http
+POST /api/issues/{issueId}/recovery-actions/resolve
+Content-Type: application/json
+
+{
+  "actionId": "<exact recovery action UUID>",
+  "outcome": "restored",
+  "sourceIssueStatus": "in_review",
+  "executionReconciliation": {
+    "runId": "<exact stopped source UUID>",
+    "providerStopped": true,
+    "actionOutcome": "completed",
+    "outcomeEvidence": "<observed outcomes and evidence for all external actions>"
+  }
+}
+```
+
+Use this path only after the operator verifies the stopped provider and external
+actions. The server requires an acknowledged cancellation, a committed policy
+review handover audit record and completed resource release. It rejects forced
+stops and workspace recovery obligations. The task stays in its current review
+stage. The stopped source is not replayed. The action retains its original
+automatic-recovery evidence under `priorAutomaticRecovery`, plus the operator
+decision and audit event. No database evidence needs manual deletion.
+
+Focused regression commands:
+
+```sh
+pnpm exec vitest run server/src/services/legacy-execution-recovery.test.ts server/src/__tests__/execution-stage-wake.test.ts server/src/__tests__/legacy-review-handover.integration.test.ts server/src/__tests__/issue-execution-policy-routes.test.ts
+```
+
+The assembled journey uses the Hermes adapter with a deterministic CLI fixture
+and a process fixture for the Lead. It proves authenticated HTTP handovers,
+provider-process ordering, changes requested, owner approval and dependency
+release. It does not qualify live Hermes or Codex model service behavior.
