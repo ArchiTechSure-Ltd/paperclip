@@ -97,9 +97,11 @@ describe.each(["agent_jwt", "agent_key"] as const)("legacy review handover assem
         env: { REVIEW_TEST_API: api, REVIEW_TEST_ISSUE: taskId, REVIEW_TEST_ROLE: role,
           ...(source === "agent_key" ? { REVIEW_TEST_KEY: role === "engineer" ? engineerKey : reviewerKey } : {}) } } }).where(eq(agents.id, agentId));
     }
+    const authorizationFixtureRunIds: string[] = [];
     if (source === "agent_key") {
       const [otherRun] = await db.insert(heartbeatRuns).values({ companyId, agentId: reviewer,
         status: "succeeded", finishedAt: new Date(), contextSnapshot: { issueId: taskId } }).returning();
+      authorizationFixtureRunIds.push(otherRun.id);
       for (const headers of [
         { authorization: `Bearer ${engineerKey}` },
         { authorization: `Bearer ${engineerKey}`, "x-paperclip-run-id": randomUUID() },
@@ -142,11 +144,14 @@ describe.each(["agent_jwt", "agent_key"] as const)("legacy review handover assem
     const readiness = await (await import("../services/issues.js")).issueService(db).getDependencyReadiness(parentId);
     expect(readiness.unresolvedBlockerCount).toBe(0);
     expect(await db.select().from(issueRecoveryActions).where(eq(issueRecoveryActions.companyId, companyId))).toHaveLength(0);
-    // Both journeys execute four task runs. The key-auth rejection fixture has
-    // only contextSnapshot.issueId, so it is not in this canonical issueId query.
+    // The scope trigger fills issueId from contextSnapshot for the key-auth
+    // rejection fixture too. Account for that row separately from the four executions.
     const taskRuns = await db.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.companyId, companyId), eq(heartbeatRuns.issueId, taskId)));
-    expect(taskRuns).toHaveLength(4);
-    expect(taskRuns.map(run => run.id).sort()).toEqual(submitted.map(run => run.runId).sort());
+    expect(submitted).toHaveLength(4);
+    expect(taskRuns).toHaveLength(4 + authorizationFixtureRunIds.length);
+    expect(taskRuns.map(run => run.id).sort()).toEqual([
+      ...submitted.map(run => run.runId), ...authorizationFixtureRunIds,
+    ].sort());
     // Historical resolved no-replay holds use the board API and keep the review intact.
     const heldId = randomUUID();
     const policy = normalizeIssueExecutionPolicy(pending.executionPolicy);
