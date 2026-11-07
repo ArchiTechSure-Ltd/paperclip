@@ -32,6 +32,7 @@ const mockAccessService = vi.hoisted(() => ({
   hasPermission: vi.fn(async () => false),
 }));
 const mockDbSelectWhere = vi.hoisted(() => vi.fn(() => ({
+  limit: async () => [{ id: "88888888-8888-4888-8888-888888888888" }],
   for: () => ({
     then: (onFulfilled: (rows: unknown[]) => unknown, onRejected?: (reason: unknown) => unknown) =>
       Promise.resolve([{
@@ -168,6 +169,7 @@ type TestActor =
     }
   | {
       type: "agent";
+      source?: "agent_jwt";
       agentId: string;
       companyId: string;
       runId: string | null;
@@ -195,6 +197,9 @@ async function createApp(actor?: TestActor) {
     next();
   });
   app.use("/api", issueRoutes(mockDb as any, {} as any));
+  app.use((error: Error, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+    res.setHeader("x-fixture-error", encodeURIComponent(error.message)); next(error);
+  });
   app.use(errorHandler);
   return app;
 }
@@ -207,10 +212,13 @@ describe("issue execution policy routes", () => {
     vi.doUnmock("../middleware/index.js");
     registerModuleMocks();
     await loadAppModules();
-  });
+  }, 90_000);
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockHeartbeatService.getActiveRunForAgent.mockResolvedValue(null);
+    mockHeartbeatService.cancelRun.mockResolvedValue(null);
+    mockIssueService.addComment.mockResolvedValue({ id: "77777777-7777-4777-8777-777777777777", body: "Submitted", createdAt: new Date() });
     mockIssueService.assertCheckoutOwner.mockResolvedValue({ adoptedFromRunId: null });
     mockIssueService.getByIdForUpdate.mockImplementation(async () => mockIssueService.getById());
     mockIssueService.findMentionedAgents.mockResolvedValue([]);
@@ -223,7 +231,8 @@ describe("issue execution policy routes", () => {
     mockDbSelect.mockImplementation(() => ({ from: mockDbSelectFrom }));
     mockDbSelectFrom.mockImplementation(() => ({ where: mockDbSelectWhere }));
     mockDbSelectWhere.mockImplementation(() => ({
-      for: () => ({
+      limit: async () => [{ id: "88888888-8888-4888-8888-888888888888" }],
+  for: () => ({
         then: (onFulfilled: (rows: unknown[]) => unknown, onRejected?: (reason: unknown) => unknown) =>
           Promise.resolve([{
             id: "55555555-5555-4555-8555-555555555555",
@@ -290,6 +299,31 @@ describe("issue execution policy routes", () => {
     expect(mockIssueService.update).not.toHaveBeenCalled();
     expect(mockRunnerGoalService.act).not.toHaveBeenCalled();
     expect(mockHeartbeatService.cancelRun).not.toHaveBeenCalled();
+  });
+
+  it.each([true, false])("finishes an authenticated legacy policy self-handover without self-cancellation (same run=%s)", async sameRun => {
+    const engineer = "33333333-3333-4333-8333-333333333333";
+    const reviewer = "44444444-4444-4444-8444-444444444444";
+    const runId = "55555555-5555-4555-8555-555555555555";
+    const issue = { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", companyId: "company-1", status: "in_progress",
+      assigneeAgentId: engineer, assigneeUserId: null, createdByUserId: "local-board", identifier: "TEST-1", title: "Review handover",
+      executionPolicy: normalizeIssueExecutionPolicy({ stages: [{ id: "11111111-1111-4111-8111-111111111111", type: "review", participants: [{ type: "agent", agentId: reviewer }] }] }), executionState: null,
+    };
+    const active = { id: runId, companyId: issue.companyId, agentId: engineer, status: "running", runtimeMode: "legacy", contextSnapshot: { issueId: issue.id } };
+    mockIssueService.getById.mockResolvedValue(issue);
+    mockIssueService.update.mockImplementation(async (_id: string, patch: Record<string, unknown>) => ({ ...issue, ...patch, updatedAt: new Date() }));
+    mockHeartbeatService.getActiveRunForAgent.mockResolvedValue(active as never);
+    mockHeartbeatService.cancelRun.mockResolvedValue({ ...active, status: "cancelled" } as never);
+    const res = await request(await createApp({ type: "agent", source: "agent_jwt", companyId: issue.companyId,
+      agentId: engineer, runId: sameRun ? runId : "66666666-6666-4666-8666-666666666666" }))
+      .patch(`/api/issues/${issue.id}`).send({ status: "done", comment: "Implementation and verification are ready for review." });
+    expect(res.status, decodeURIComponent(res.headers["x-fixture-error"] ?? JSON.stringify(res.body))).toBe(200);
+    expect(res.body).toMatchObject({ status: "in_review", assigneeAgentId: reviewer });
+    if (sameRun) expect(mockHeartbeatService.cancelRun).not.toHaveBeenCalled();
+    else expect(mockHeartbeatService.cancelRun).toHaveBeenCalledWith(runId, expect.any(String), expect.objectContaining({ errorCode: "issue_reassigned" }));
+    expect(mockDb.transaction).toHaveBeenCalled();
+    expect(mockIssueService.update).toHaveBeenCalledWith(issue.id, expect.objectContaining({ status: "in_review" }), expect.anything());
+    expect(mockHeartbeatService.wakeup).not.toHaveBeenCalled();
   });
 
   it("rejects a snapshot without a policy update", async () => {
