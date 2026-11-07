@@ -1,0 +1,150 @@
+name: ARC-108 disposable exact-source verification
+on:
+  push:
+    branches: [codex/arc108-disposable-verification]
+    paths: [.github/workflows/arc108-disposable.yml]
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [candidate, baseline]
+        include:
+          - source: candidate
+            sha: 2758ab91dc360b63ffd8e37feacc3c3181be45a5
+          - source: baseline
+            sha: 6582a3968e99e8c7231d722e30d80d6d734f8e2e
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ matrix.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+        with:
+          version: 9.15.4
+          run_install: false
+      - name: Identity and prerequisites
+        run: |
+          mkdir -p verification-evidence
+          test "$(git rev-parse HEAD)" = "${{ matrix.sha }}"
+          git rev-parse HEAD | tee verification-evidence/source.txt
+          pnpm install --resolution-only --ignore-scripts --no-frozen-lockfile
+          pnpm install --frozen-lockfile
+          git diff -- pnpm-lock.yaml > verification-evidence/lockfile.diff
+          pnpm --filter @paperclipai/plugin-sdk ensure-build-deps
+      - name: Individual focused receipts
+        env:
+          SOURCE: ${{ matrix.source }}
+        run: |
+          python3 - <<'PY'
+          import os, subprocess, pathlib, json
+          out=pathlib.Path('verification-evidence').resolve()
+          suites=['src/services/workspace-recovery.test.ts','src/__tests__/environment-cleanup-work.test.ts']
+          if os.environ['SOURCE']=='candidate':
+            suites += ['src/__tests__/deferred-execution-receipt-work.test.ts','src/__tests__/execution-stage-wake.test.ts','src/__tests__/issue-comment-reopen-routes.test.ts','src/__tests__/issue-execution-policy-routes.test.ts','src/__tests__/legacy-review-handover.integration.test.ts','src/services/legacy-execution-recovery.test.ts','src/modules/run-dispatch/domain/policy.test.ts']
+          env={k:v for k,v in os.environ.items() if not(k.endswith('BASE_URL') and not v)}
+          receipts=[]
+          for suite in suites:
+            name=pathlib.Path(suite).name
+            with (out/(name+'.log')).open('w') as log:
+              try:
+                r=subprocess.run(['timeout','--kill-after=10s','360s','../node_modules/.bin/vitest','run','--config','vitest.config.ts','--reporter=verbose',suite],cwd='server',env=env,stdout=log,stderr=subprocess.STDOUT)
+                code=r.returncode
+              except Exception as e:
+                log.write(str(e));code=125
+            (out/(name+'.exit')).write_text(str(code)+'\n')
+            receipts.append({'suite':suite,'exit':code})
+          (out/'results.json').write_text(json.dumps(receipts,indent=2))
+          print(json.dumps(receipts,indent=2))
+          raise SystemExit(any(r['exit'] for r in receipts))
+          PY
+      - name: Upload receipts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: arc108-focused-${{ matrix.source }}-${{ github.run_id }}
+          path: verification-evidence/
+          retention-days: 14
+  typecheck:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 2758ab91dc360b63ffd8e37feacc3c3181be45a5
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+        with:
+          version: 9.15.4
+          run_install: false
+      - run: |
+          mkdir -p verification-evidence
+          test "$(git rev-parse HEAD)" = 2758ab91dc360b63ffd8e37feacc3c3181be45a5
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gcc libc6-dev pkg-config
+          (cd packages/paperclip-runner && rustup show)
+          toolchain=$(cd packages/paperclip-runner && rustup show active-toolchain | awk '{print $1}')
+          echo "RUSTUP_TOOLCHAIN=$toolchain" >> "$GITHUB_ENV"
+          pnpm install --resolution-only --ignore-scripts --no-frozen-lockfile
+          pnpm install --frozen-lockfile
+      - name: Full available typecheck
+        run: |
+          set +e
+          set -o pipefail
+          pnpm typecheck 2>&1 | tee verification-evidence/typecheck.log
+          result=$?
+          echo "$result" > verification-evidence/typecheck.exit
+          exit "$result"
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: arc108-typecheck-${{ github.run_id }}
+          path: verification-evidence/
+          retention-days: 14
+  docker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 2758ab91dc360b63ffd8e37feacc3c3181be45a5
+          persist-credentials: false
+      - name: Build exact candidate without publishing
+        run: |
+          mkdir -p verification-evidence
+          test "$(git rev-parse HEAD)" = 2758ab91dc360b63ffd8e37feacc3c3181be45a5
+          set -o pipefail
+          docker build --target production --label org.opencontainers.image.revision=2758ab91dc360b63ffd8e37feacc3c3181be45a5 -t arc108:candidate . 2>&1 | tee verification-evidence/docker-build.log
+          docker image inspect arc108:candidate > verification-evidence/image.json
+      - name: Disposable container health
+        run: |
+          docker run -d --name arc108 -p 127.0.0.1:3100:3100 -e HOST=0.0.0.0 -e PORT=3100 -e PAPERCLIP_DEPLOYMENT_MODE=local_trusted arc108:candidate
+          for attempt in $(seq 1 120); do
+            if curl -fsS http://127.0.0.1:3100/api/health > verification-evidence/health.json; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - name: Capture and remove disposable container
+        if: always()
+        run: |
+          docker logs arc108 > verification-evidence/container.log 2>&1 || true
+          docker inspect arc108 > verification-evidence/container.json 2>&1 || true
+          docker rm -fv arc108 || true
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: arc108-docker-${{ github.run_id }}
+          path: verification-evidence/
+          retention-days: 14
