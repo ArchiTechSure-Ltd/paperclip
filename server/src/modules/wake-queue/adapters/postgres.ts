@@ -239,6 +239,7 @@ function buildTransaction(tx: Db, deps: WakeQueuePostgresAdapterDeps, db: Db, ru
             and(
               eq(agentWakeupRequests.companyId, companyId),
               eq(agentWakeupRequests.status, DEFERRED_WAKE_STATUS),
+              sql`${agentWakeupRequests.payload}->'executionStageDelivery' is null`,
               excludedWakeIds?.length ? notInArray(agentWakeupRequests.id, excludedWakeIds) : undefined,
               sql`${agentWakeupRequests.payload} ->> 'issueId' = ${issueId}`,
               interruptQueueId ? eq(agentWakeupRequests.id, interruptQueueId) : undefined,
@@ -294,6 +295,7 @@ function buildTransaction(tx: Db, deps: WakeQueuePostgresAdapterDeps, db: Db, ru
                 eq(agentWakeupRequests.companyId, companyId),
                 eq(agentWakeupRequests.id, row.id),
                 eq(agentWakeupRequests.status, DEFERRED_WAKE_STATUS),
+              sql`${agentWakeupRequests.payload}->'executionStageDelivery' is null`,
               ),
             );
         }
@@ -336,6 +338,7 @@ function buildTransaction(tx: Db, deps: WakeQueuePostgresAdapterDeps, db: Db, ru
             eq(agentWakeupRequests.agentId, agentId),
             eq(agentWakeupRequests.companyId, companyId),
             eq(agentWakeupRequests.status, DEFERRED_WAKE_STATUS),
+              sql`${agentWakeupRequests.payload}->'executionStageDelivery' is null`,
           ),
         )
         .returning({ id: agentWakeupRequests.id });
@@ -351,6 +354,7 @@ function buildTransaction(tx: Db, deps: WakeQueuePostgresAdapterDeps, db: Db, ru
             eq(agentWakeupRequests.id, wakeId),
             eq(agentWakeupRequests.companyId, companyId),
             eq(agentWakeupRequests.status, DEFERRED_WAKE_STATUS),
+              sql`${agentWakeupRequests.payload}->'executionStageDelivery' is null`,
           ),
         )
         .returning();
@@ -375,6 +379,7 @@ function buildTransaction(tx: Db, deps: WakeQueuePostgresAdapterDeps, db: Db, ru
             eq(agentWakeupRequests.agentId, agentId),
             eq(agentWakeupRequests.companyId, companyId),
             eq(agentWakeupRequests.status, DEFERRED_WAKE_STATUS),
+              sql`${agentWakeupRequests.payload}->'executionStageDelivery' is null`,
           ),
         )
         .returning({ id: agentWakeupRequests.id });
@@ -484,6 +489,7 @@ function buildTransaction(tx: Db, deps: WakeQueuePostgresAdapterDeps, db: Db, ru
             eq(agentWakeupRequests.id, wakeId),
             eq(agentWakeupRequests.companyId, companyId),
             eq(agentWakeupRequests.status, DEFERRED_WAKE_STATUS),
+              sql`${agentWakeupRequests.payload}->'executionStageDelivery' is null`,
           ),
         )
         .returning({ id: agentWakeupRequests.id });
@@ -928,6 +934,7 @@ export function createWakeAdmissionReader(): WakeAdmissionReader {
             eq(agentWakeupRequests.companyId, companyId),
             eq(agentWakeupRequests.agentId, agentId),
             eq(agentWakeupRequests.status, DEFERRED_WAKE_STATUS),
+              sql`${agentWakeupRequests.payload}->'executionStageDelivery' is null`,
             sql`${agentWakeupRequests.payload} ->> 'issueId' = ${issueId}`,
             ...(chatConversationId
               ? [
@@ -1043,6 +1050,7 @@ export function createWakeAdmissionWriter(): WakeAdmissionWriter {
       const [prior] = await tx.select().from(agentWakeupRequests).where(and(
         eq(agentWakeupRequests.companyId, input.companyId), eq(agentWakeupRequests.id, input.existingDeferredWakeId),
         eq(agentWakeupRequests.status, DEFERRED_WAKE_STATUS),
+              sql`${agentWakeupRequests.payload}->'executionStageDelivery' is null`,
       )).for("update");
       if (!prior) throw new Error("wake-queue: the deferred wake to merge into was not found for this company");
       const priorPayload = parseObject(prior.payload), issueId = readNonEmptyString(priorPayload.issueId);
@@ -1095,6 +1103,7 @@ export function createWakeAdmissionWriter(): WakeAdmissionWriter {
             eq(agentWakeupRequests.id, input.existingDeferredWakeId),
             eq(agentWakeupRequests.companyId, input.companyId),
             eq(agentWakeupRequests.status, DEFERRED_WAKE_STATUS),
+              sql`${agentWakeupRequests.payload}->'executionStageDelivery' is null`,
           ),
         )
         .returning({ id: agentWakeupRequests.id });
