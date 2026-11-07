@@ -4627,7 +4627,8 @@ Focused regression commands:
 pnpm exec vitest run server/src/services/legacy-execution-recovery.test.ts server/src/__tests__/execution-stage-wake.test.ts server/src/__tests__/legacy-review-handover.integration.test.ts server/src/__tests__/issue-execution-policy-routes.test.ts
 ```
 
-The self-handover exemption accepts both run JWTs and authenticated agent keys.
+The policy-controlled self-handover exemption accepts both run JWTs and authenticated
+agent keys. Ordinary human reassignment retains its existing run-JWT-only exemption.
 An agent-key run header is not authority by itself. The normal mutation path
 validates the persisted run against the authenticated agent and company first.
 The exemption then requires the exact active legacy run, task context and current
