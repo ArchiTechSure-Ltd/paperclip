@@ -3029,6 +3029,58 @@ describe("agent issue mutation checkout ownership", () => {
     });
   });
 
+  describe("agent review handoff exemption (agent_key)", () => {
+    const runningRun = {
+      id: ownerRunId,
+      companyId,
+      agentId: ownerAgentId,
+      runtimeMode: "legacy",
+      status: "running",
+      contextSnapshot: { issueId },
+    };
+
+    beforeEach(() => {
+      mockIssueService.getById.mockResolvedValue(makeIssue({
+        status: "in_progress",
+        assigneeAgentId: ownerAgentId,
+        executionRunId: ownerRunId,
+      }));
+      mockHeartbeatService.getRun.mockResolvedValue(runningRun);
+      mockHeartbeatService.cancelRun.mockResolvedValue({ ...runningRun, status: "cancelled" });
+      mockAgentService.getById.mockResolvedValue({ id: peerAgentId, companyId, name: "Reviewer" });
+      mockAccessService.decide.mockResolvedValue({ allowed: true });
+    });
+
+    it("skips run cancellation when an agent_key agent hands off to in_review with matching run identity", async () => {
+      // agent_key is the default source for ownerActor()
+      const res = await request(createApp(ownerActor()))
+        .patch(`/api/issues/${issueId}`)
+        .send({ status: "in_review", assigneeAgentId: peerAgentId });
+
+      expect(res.status, JSON.stringify(res.body)).toBe(200);
+      expect(mockHeartbeatService.cancelRun).not.toHaveBeenCalled();
+      expect(mockIssueService.update).toHaveBeenCalledTimes(1);
+    });
+
+    it("still cancels when the run identity does not match", async () => {
+      mockHeartbeatService.getRun.mockResolvedValue({
+        ...runningRun,
+        id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      });
+
+      const res = await request(createApp(ownerActor()))
+        .patch(`/api/issues/${issueId}`)
+        .send({ status: "in_review", assigneeAgentId: peerAgentId });
+
+      expect(res.status, JSON.stringify(res.body)).toBe(200);
+      expect(mockHeartbeatService.cancelRun).toHaveBeenCalledWith(
+        runningRun.id,
+        "Cancelled before issue reassignment",
+        expect.objectContaining({ errorCode: "issue_reassigned" }),
+      );
+    });
+  });
+
   describe("native run changing its own task status", () => {
     const nativeRun = {
       id: ownerRunId,
