@@ -10,10 +10,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 74463205ad72e0859865a0876409807272ef6810
+          ref: 7ec4d62394a57f789d95b84a83cae60827306d61
           persist-credentials: false
       - name: Verify source identity
-        run: test "$(git rev-parse HEAD)" = 74463205ad72e0859865a0876409807272ef6810
+        run: test "$(git rev-parse HEAD)" = 7ec4d62394a57f789d95b84a83cae60827306d61
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 24
