@@ -59,6 +59,7 @@ jobs:
           GOOGLE_GENERATIVE_AI_BASE_URL: http://127.0.0.1:9
         run: |
           set -o pipefail
+          node --import ./server/node_modules/tsx/dist/loader.mjs --test server/src/__tests__/historical-settlement.test.mjs server/src/__tests__/historical-settlement-store.test.mjs 2>&1 | tee verification-evidence/verifier-tests.log
           pnpm exec vitest run server/src/__tests__/execution-stage-wake.test.ts --maxWorkers=1 2>&1 | tee verification-evidence/tests.log
       - name: Full typecheck
         id: typecheck
