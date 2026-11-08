@@ -384,7 +384,7 @@
  		};
  	}
  	logAgentLaunch(plan) {
-@@ -4279,10 +4420,18 @@
+@@ -4279,24 +4420,33 @@
  	}
  	async spawnAgentProcess(plan) {
  		const spawnCommand = buildAgentSpawnCommand(plan.spawnCommand, plan.args, process.platform, plan.spawnOptions.env);
@@ -404,8 +404,13 @@
 +		if (!this.options.spawnAgent && options.detached === true) ownProcessGroup(spawnedChild);
  		try {
  			await waitForSpawn$1(spawnedChild);
++			return requireAgentStdio(spawnedChild);
  		} catch (error) {
-@@ -4293,10 +4442,10 @@
++			if (processGroupId(spawnedChild) !== null) await this.terminateAgentProcess(spawnedChild);
+ 			throw new AgentSpawnError(this.options.agentCommand, error);
+ 		}
+-		return requireAgentStdio(spawnedChild);
+ 	}
  	createConnection(stream, launch) {
  		const app = client({ name: "acpx" }).onNotification(methods.client.session.update, async ({ params }) => {
  			await this.handleSessionUpdate(params);
@@ -419,7 +424,7 @@
  		}).onRequest(methods.client.fs.readTextFile, async ({ params }) => {
  			return await this.handleReadTextFile(params);
  		}).onRequest(methods.client.fs.writeTextFile, async ({ params }) => {
-@@ -4312,6 +4461,11 @@
+@@ -4312,6 +4462,11 @@
  		}).onRequest(methods.client.terminal.release, async ({ params }) => {
  			return await this.handleReleaseTerminal(params);
  		});
@@ -431,7 +436,7 @@
  		if (launch.devinAcp) app.onRequest("_cognition.ai/request_diagnostics", (params) => {
  			return params && typeof params === "object" && !Array.isArray(params) ? params : {};
  		}, async () => ({}));
-@@ -4333,12 +4487,12 @@
+@@ -4333,12 +4488,12 @@
  	async initializeProtocolConnection(connection, launch) {
  		const initializePromise = connection.initialize({
  			protocolVersion: PROTOCOL_VERSION,
@@ -446,7 +451,7 @@
  			clientInfo: resolveClientInfo(launch.devinAcp)
  		});
  		const initialized = launch.geminiAcp ? await withTimeout(initializePromise, resolveGeminiAcpStartupTimeoutMs()) : await initializePromise;
-@@ -4348,9 +4502,7 @@
+@@ -4348,9 +4503,7 @@
  	async handleInitializeFailure(params, error) {
  		params.startupFailure.dispose();
  		const normalizedError = await this.normalizeInitializeError(error, params.child, params.startupStderr);
@@ -457,7 +462,7 @@
  		if (params.launch.geminiAcp && error instanceof TimeoutError) throw new GeminiAcpStartupTimeoutError(await buildGeminiAcpStartupTimeoutMessage(params.launch.spawnCommand), {
  			cause: error,
  			retryable: true
-@@ -4358,6 +4510,49 @@
+@@ -4358,6 +4511,49 @@
  		throw normalizedError;
  	}
  	createTappedStream(base) {
@@ -507,7 +512,7 @@
  		const onAcpMessage = () => this.eventHandlers.onAcpMessage;
  		const onAcpOutputMessage = () => this.eventHandlers.onAcpOutputMessage;
  		const elicitationRequestIds = /* @__PURE__ */ new Set();
-@@ -4367,8 +4562,12 @@
+@@ -4367,8 +4563,12 @@
  		const shouldSuppressInboundReplaySessionUpdate = (message) => {
  			return this.suppressReplaySessionUpdateMessages && isSessionUpdateNotification(message);
  		};
@@ -521,7 +526,7 @@
  			if (requestId !== void 0) {
  				elicitationRequestIds.add(requestId);
  				return;
-@@ -4379,6 +4578,7 @@
+@@ -4379,6 +4579,7 @@
  			}
  		};
  		return {
@@ -529,7 +534,7 @@
  			readable: new ReadableStream({ async start(controller) {
  				const reader = base.readable.getReader();
  				try {
-@@ -4386,16 +4586,27 @@
+@@ -4386,16 +4587,27 @@
  						const { value, done } = await reader.read();
  						if (done) break;
  						if (!value) continue;
@@ -559,7 +564,7 @@
  				const promptOwner = promptRequestOwner(message);
  				if (promptOwner) bindPromptOwner(promptOwner);
  				const id = responseId(message);
-@@ -4403,10 +4614,20 @@
+@@ -4403,10 +4615,20 @@
  					onAcpOutputMessage()?.("outbound", message);
  					onAcpMessage()?.("outbound", message);
  				}
@@ -580,7 +585,7 @@
  					writer.releaseLock();
  				}
  			} })
-@@ -4422,7 +4643,10 @@
+@@ -4422,7 +4644,10 @@
  			const createPromise = this.runConnectionRequest(() => connection.newSession({
  				cwd: sessionCwd,
  				mcpServers: this.options.mcpServers ?? [],
@@ -592,7 +597,7 @@
  			}));
  			result = claudeAcp ? await withTimeout(createPromise, resolveClaudeAcpSessionCreateTimeoutMs()) : await createPromise;
  		} catch (error) {
-@@ -4454,6 +4678,7 @@
+@@ -4454,6 +4679,7 @@
  	}
  	async loadSessionWithOptions(sessionId, cwd = this.options.cwd, options = {}) {
  		const connection = this.getConnection();
@@ -600,7 +605,7 @@
  		const sessionCwd = await resolveAgentSessionCwd(cwd, this.options.agentCommand);
  		const previousSuppression = this.applySessionUpdateSuppression(Boolean(options.suppressReplayUpdates));
  		let response;
-@@ -4461,7 +4686,9 @@
+@@ -4461,7 +4687,9 @@
  			response = await this.runConnectionRequest(() => connection.loadSession({
  				sessionId,
  				cwd: sessionCwd,
@@ -611,7 +616,7 @@
  			}));
  			await this.waitForSessionUpdateDrain(options.replayIdleMs ?? REPLAY_IDLE_MS, options.replayDrainTimeoutMs ?? REPLAY_DRAIN_TIMEOUT_MS);
  		} finally {
-@@ -4474,11 +4701,14 @@
+@@ -4474,11 +4702,14 @@
  	}
  	async resumeSession(sessionId, cwd = this.options.cwd) {
  		const connection = this.getConnection();
@@ -627,7 +632,7 @@
  		}));
  		this.loadedSessionId = sessionId;
  		const result = toReconnectedSessionResult(response);
-@@ -4590,15 +4820,17 @@
+@@ -4590,15 +4821,17 @@
  			throw maybeWrapSessionControlError("session/set_config_option", error, `for "${configId}"="${value}"`);
  		}
  	}
@@ -651,7 +656,7 @@
  	}
  	async setSessionModelThroughConfig(sessionId, modelId, configId) {
  		const connection = this.getConnection();
-@@ -4608,7 +4840,9 @@
+@@ -4608,7 +4841,9 @@
  				configId,
  				value: modelId
  			}));
@@ -662,7 +667,7 @@
  			return response;
  		} catch (error) {
  			return this.throwSessionModelError("session/set_config_option", modelId, error);
-@@ -4747,6 +4981,14 @@
+@@ -4747,6 +4982,14 @@
  		this.connection?.close?.();
  	}
  	async terminateAgentProcess(child) {
@@ -677,7 +682,7 @@
  		const stdinCloseGraceMs = resolveAgentCloseAfterStdinEndMs(this.options.agentCommand);
  		this.endAgentStdin(child);
  		let exited = await waitForChildExit(child, stdinCloseGraceMs);
-@@ -4864,7 +5106,7 @@
+@@ -4864,7 +5107,7 @@
  	}
  	selectAuthMethod(methods) {
  		for (const method of methods) {
@@ -686,7 +691,7 @@
  			if (envCredential) return {
  				methodId: method.id,
  				credential: envCredential,
-@@ -4890,7 +5132,7 @@
+@@ -4890,7 +5133,7 @@
  	}
  	readAgentSpecificEnvCredential(methodId) {
  		if (!this.isGrokBuildAcpCommand() || methodId !== "xai.api_key") return;
@@ -695,7 +700,7 @@
  		return typeof value === "string" && value.trim().length > 0 ? value : void 0;
  	}
  	selectAgentManagedAuthMethod(methodId) {
-@@ -4915,9 +5157,9 @@
+@@ -4915,9 +5158,9 @@
  		await connection.authenticate({ methodId: selected.methodId });
  		this.log(`authenticated with method ${selected.methodId} (${selected.source})`);
  	}
@@ -707,7 +712,7 @@
  		if (hostResponse) return hostResponse;
  		const { response, recorded } = await this.resolvePermissionRequestFromMode(params);
  		if (!recorded) {
-@@ -4926,14 +5168,81 @@
+@@ -4926,14 +5169,81 @@
  		}
  		return response;
  	}
@@ -791,7 +796,7 @@
  		})).then((response) => ({
  			kind: "response",
  			response
-@@ -4970,7 +5279,7 @@
+@@ -4970,7 +5280,7 @@
  	isElicitationSessionCancelling(sessionId) {
  		return this.closing || this.cancellingSessionIds.has(sessionId);
  	}
@@ -800,7 +805,7 @@
  		if (!this.options.onPermissionRequest) return;
  		const signal = this.cancellationSignalForSession(params.sessionId);
  		try {
-@@ -4978,7 +5287,7 @@
+@@ -4978,7 +5288,7 @@
  				sessionId: params.sessionId,
  				raw: params,
  				inferredKind: inferToolKind(params)
@@ -809,7 +814,7 @@
  			return this.hostPermissionDecisionResponse(params, signal, decision);
  		} catch (error) {
  			return this.hostPermissionErrorResponse(params, signal, error);
-@@ -5028,6 +5337,12 @@
+@@ -5028,6 +5338,12 @@
  	attachAgentLifecycleObservers(child) {
  		child.once("exit", (exitCode, signal) => {
  			this.recordAgentExit("process_exit", exitCode, signal);
@@ -822,7 +827,7 @@
  		});
  		child.once("close", (exitCode, signal) => {
  			this.recordAgentExit("process_close", exitCode, signal);
-@@ -5100,6 +5415,9 @@
+@@ -5100,6 +5416,9 @@
  			return await this.filesystem.readTextFile(params);
  		} catch (error) {
  			this.recordPermissionError(params.sessionId, error);
@@ -832,7 +837,7 @@
  			throw error;
  		}
  	}
-@@ -5239,6 +5557,7 @@
+@@ -5239,6 +5558,7 @@
  	record.cumulative_token_usage = conversation.cumulative_token_usage;
  	record.cumulative_cost = conversation.cumulative_cost;
  	record.request_token_usage = conversation.request_token_usage;
@@ -840,7 +845,7 @@
  }
  //#endregion
  //#region src/runtime/engine/session-options.ts
-@@ -5701,7 +6020,8 @@
+@@ -5701,7 +6021,8 @@
  		updated_at: conversation.updated_at,
  		cumulative_token_usage: deepClone(conversation.cumulative_token_usage ?? {}),
  		cumulative_cost: cloneUsageCost(conversation.cumulative_cost),
@@ -850,7 +855,7 @@
  	};
  }
  function cloneUsageCost(cost) {
-@@ -5771,10 +6091,20 @@
+@@ -5771,10 +6092,20 @@
  	trimConversationForRuntime(conversation);
  	return acpx;
  }
@@ -873,7 +878,7 @@
  	updateConversationTimestamp(conversation, timestamp);
  	trimConversationForRuntime(conversation);
  	return true;
-@@ -6136,6 +6466,7 @@
+@@ -6136,6 +6467,7 @@
  	pendingAgentSessionId = loadState.pendingAgentSessionId;
  	sessionModels = loadState.sessionModels;
  	const preferenceReplay = await replayFreshSessionPreferences({
@@ -881,7 +886,7 @@
  		client,
  		record,
  		createdFreshSession,
-@@ -6193,14 +6524,16 @@
+@@ -6193,14 +6525,16 @@
  	if (shouldReconnect) process.stderr.write(`[acpx] saved session pid ${record.pid} is dead; respawning agent and attempting session reconnect\n`);
  }
  async function replayFreshSessionPreferences(params) {
@@ -900,7 +905,7 @@
  			client: params.client,
  			sessionId: params.sessionId,
  			desiredModeId: params.desiredModeId,
-@@ -6219,7 +6552,7 @@
+@@ -6219,7 +6553,7 @@
  			verbose: params.verbose,
  			suppressWarnings: params.suppressWarnings
  		});
@@ -909,7 +914,7 @@
  			client: params.client,
  			record: params.record,
  			sessionId: params.sessionId,
-@@ -6435,6 +6768,27 @@
+@@ -6435,6 +6769,27 @@
  //#region src/runtime/engine/prompt-turn.ts
  const SESSION_REPLY_IDLE_MS = 1e3;
  const SESSION_REPLY_DRAIN_TIMEOUT_MS = 5e3;
@@ -937,7 +942,7 @@
  async function runPromptTurn(params) {
  	try {
  		const promptPromise = params.client.prompt(params.sessionId, params.prompt, params.onPromptRequestStarted, params.onElicitation);
-@@ -6444,7 +6798,23 @@
+@@ -6444,7 +6799,23 @@
  			idleMs: SESSION_REPLY_IDLE_MS,
  			timeoutMs: SESSION_REPLY_DRAIN_TIMEOUT_MS
  		}).catch(() => {});
@@ -963,9 +968,7 @@
  			source: "rpc"
 --- a/dist/owned-process-group.js
 +++ b/dist/owned-process-group.js
-@@ -0,0 +1,59 @@
-+// Authority exists only for a process created by this ACPX instance with detached=true.
-+// Never register persisted PIDs or custom/remote spawn results here.
+@@ -0,0 +1,57 @@
 +const groups = new WeakMap();
 +const closes = new WeakMap();
 +export function ownProcessGroup(child) {
