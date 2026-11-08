@@ -54,13 +54,24 @@ describe.each(["agent_jwt", "agent_key"] as const)("legacy review handover assem
     heartbeat = heartbeatService(db, { runtimeEnv: {} });
   }, 90_000);
   afterAll(async () => {
+    const cleanupStage = async (stage: string, cleanup: () => unknown | PromiseLike<unknown>) => {
+      const started = Date.now();
+      console.info("REVIEW_HANDOVER_CLEANUP", { source, stage, event: "start" });
+      await cleanup();
+      console.info("REVIEW_HANDOVER_CLEANUP", { source, stage, event: "complete", durationMs: Date.now() - started });
+    };
     closing = true;
-    await db?.update(agents).set({ status: "paused" });
+    await cleanupStage("pause-agents", () => db?.update(agents).set({ status: "paused" }));
     for (const release of releases.values()) release();
-    await heartbeat?.drainActiveRunExecutions();
-    if (server) await new Promise<void>(resolve => server.close(() => resolve()));
-    await db?.$client.end(); await temporary?.cleanup();
-    if (dir) await rm(dir, { recursive: true, force: true });
+    await cleanupStage("drain-runs", () => heartbeat?.drainActiveRunExecutions());
+    await cleanupStage("close-http", async () => {
+      if (server) await new Promise<void>(resolve => server.close(() => resolve()));
+    });
+    await cleanupStage("close-db-client", () => db?.$client.end());
+    await cleanupStage("cleanup-postgres", () => temporary?.cleanup());
+    await cleanupStage("remove-temp-files", async () => {
+      if (dir) await rm(dir, { recursive: true, force: true });
+    });
     if (oldJwt === undefined) delete process.env.PAPERCLIP_AGENT_JWT_SECRET; else process.env.PAPERCLIP_AGENT_JWT_SECRET = oldJwt;
     if (oldApi === undefined) delete process.env.PAPERCLIP_API_URL; else process.env.PAPERCLIP_API_URL = oldApi;
   });
