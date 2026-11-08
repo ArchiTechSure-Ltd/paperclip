@@ -9,6 +9,9 @@ on:
       - 'packages/adapter-utils/src/acpx-engine/**'
       - 'server/src/__tests__/acpx-owned-process-lifecycle.test.mjs'
       - '.github/workflows/acpx-owned-process-lifecycle.yml'
+      - '.github/workflows/pr*.yml'
+      - '.github/workflows/ci-routing.yml'
+      - 'scripts/__tests__/e2e-shard.test.mjs'
 permissions:
   contents: read
 jobs:

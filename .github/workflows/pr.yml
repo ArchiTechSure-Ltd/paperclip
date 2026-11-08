@@ -14,6 +14,6 @@ permissions:
 jobs:
   ci:
     if: github.event.action != 'labeled' || github.event.label.name == 'profile-ci' || github.event.label.name == 'full-ci'
-    # Master requires CODEOWNERS review for .github/**, including this workflow.
-    # Pin the fork's compatible reviewed CI contract; upstream master can require newer source.
-    uses: architechsure-ltd/paperclip/.github/workflows/pr-trusted.yml@92ec8fbe7c94a434fe2cf2b4bb3d0973946631df
+    # Use the reviewed fork workflow and its pinned compatible routing contract.
+    # Repository workflow changes still require normal review.
+    uses: architechsure-ltd/paperclip/.github/workflows/pr-trusted.yml@fb370d801f9aacd64709d5dbf059b8a99f5e1feb
