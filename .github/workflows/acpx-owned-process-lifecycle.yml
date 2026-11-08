@@ -5,6 +5,7 @@ on:
     branches: [master]
     paths:
       - 'patches/acpx@0.13.1.patch'
+      - 'pnpm-lock.yaml'
       - 'packages/adapter-utils/src/acpx-engine/**'
       - 'server/src/__tests__/acpx-owned-process-lifecycle.test.mjs'
       - '.github/workflows/acpx-owned-process-lifecycle.yml'
@@ -18,6 +19,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 24
@@ -47,8 +49,9 @@ jobs:
         run: |
           set -o pipefail
           pnpm install --resolution-only --ignore-scripts --no-frozen-lockfile 2>&1 | tee verification-evidence/resolution.log
-          pnpm install --frozen-lockfile 2>&1 | tee verification-evidence/install.log
           git diff -- pnpm-lock.yaml > verification-evidence/lockfile.diff
+          cp pnpm-lock.yaml verification-evidence/pnpm-lock.yaml
+          pnpm install --frozen-lockfile 2>&1 | tee verification-evidence/install.log
       - name: Prepare regression package prerequisites
         run: |
           pnpm run preflight:workspace-links
