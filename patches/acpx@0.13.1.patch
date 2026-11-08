@@ -1,8 +1,7 @@
 diff --git a/dist/client-CxNllqui.d.ts b/dist/client-CxNllqui.d.ts
-index 5e2113ac0..45aff03c3 100644
 --- a/dist/client-CxNllqui.d.ts
 +++ b/dist/client-CxNllqui.d.ts
-@@ -120,6 +120,8 @@ declare class AcpClient {
+@@ -120,6 +120,8 @@
    private initializeProtocolConnection;
    private handleInitializeFailure;
    private createTappedStream;
@@ -11,7 +10,7 @@ index 5e2113ac0..45aff03c3 100644
    createSession(cwd?: string): Promise<SessionCreateResult>;
    loadSession(sessionId: string, cwd?: string): Promise<SessionLoadResult>;
    loadSessionWithOptions(sessionId: string, cwd?: string, options?: LoadSessionOptions): Promise<SessionLoadResult>;
-@@ -135,6 +137,7 @@ declare class AcpClient {
+@@ -135,6 +137,7 @@
    private throwPromptPermissionFailureIfPresent;
    setSessionMode(sessionId: string, modeId: string): Promise<void>;
    setSessionConfigOption(sessionId: string, configId: string, value: string): Promise<SetSessionConfigOptionResponse>;
@@ -22,7 +21,12 @@ index 5e2113ac0..45aff03c3 100644
 diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
 --- a/dist/live-checkpoint-BSIrfgVo.js
 +++ b/dist/live-checkpoint-BSIrfgVo.js
-@@ -6,7 +6,7 @@
+@@ -1,3 +1,4 @@
++import { ownProcessGroup, processGroupId, closeOwnedProcessGroup } from "./owned-process-group.js";
+ import fs, { readFileSync, statSync } from "node:fs";
+ import { fileURLToPath } from "node:url";
+ import path from "node:path";
+@@ -6,7 +7,7 @@
  import { randomUUID } from "node:crypto";
  import { execFile, spawn } from "node:child_process";
  import { Readable, Writable } from "node:stream";
@@ -31,7 +35,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  import readline from "node:readline/promises";
  //#region src/errors.ts
  var AcpxOperationalError = class extends Error {
-@@ -1068,12 +1068,14 @@
+@@ -1068,12 +1069,14 @@
  		last_agent_disconnect_reason: canonical.lastAgentDisconnectReason,
  		protocol_version: canonical.protocolVersion,
  		agent_capabilities: canonical.agentCapabilities,
@@ -46,7 +50,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  		acpx: canonical.acpx,
  		imported_from: canonical.importedFrom ? {
  			record_id: canonical.importedFrom.recordId,
-@@ -1239,7 +1241,8 @@
+@@ -1239,7 +1242,8 @@
  	for (const [key, value] of Object.entries(record)) {
  		const parsed = parseTokenUsage(value);
  		if (parsed == null) return null;
@@ -56,7 +60,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  	}
  	return usage;
  }
-@@ -1325,6 +1328,93 @@
+@@ -1325,6 +1329,93 @@
  function isConversationMessage(raw) {
  	return raw === "Resume" || isUserMessage$1(raw) || isAgentMessage$1(raw);
  }
@@ -150,7 +154,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  function parseConversationRecord(record) {
  	if (!hasValidConversationCore(record)) return;
  	const title = parseConversationTitle(record.title);
-@@ -1339,7 +1429,8 @@
+@@ -1339,7 +1430,8 @@
  		updated_at: record.updated_at,
  		cumulative_token_usage: cumulativeTokenUsage ?? {},
  		cumulative_cost: cumulativeCost,
@@ -160,7 +164,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  	};
  }
  const INVALID_VALUE = Symbol("invalid");
-@@ -1541,12 +1632,14 @@
+@@ -1541,12 +1633,14 @@
  		lastAgentDisconnectReason: optionals.lastAgentDisconnectReason,
  		protocolVersion: typeof record.protocol_version === "number" ? record.protocol_version : void 0,
  		agentCapabilities: asRecord$4(record.agent_capabilities),
@@ -175,7 +179,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  		acpx: parseAcpxState(record.acpx),
  		importedFrom: metadata.importedFrom
  	};
-@@ -1661,8 +1754,9 @@
+@@ -1661,8 +1755,9 @@
  	"RedactedThinking",
  	"ToolUse"
  ]);
@@ -186,7 +190,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  	"agent_capabilities",
  	"messages.Agent.content.ToolUse.input",
  	"acpx.desired_config_options",
-@@ -3104,10 +3198,10 @@
+@@ -3104,10 +3199,10 @@
  	authEnvKeyCache.set(methodId, key);
  	return key;
  }
@@ -199,7 +203,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  	if (typeof value === "string" && value.trim().length > 0) return value;
  }
  function protectedEnvKey(key) {
-@@ -3135,8 +3229,21 @@
+@@ -3135,8 +3230,21 @@
  	}
  	return protectedKeys;
  }
@@ -223,7 +227,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  	const protectedAuthEnvKeys = promotePrefixedAuthEnvironment(env);
  	if (authCredentials) for (const [methodId, credential] of Object.entries(authCredentials)) {
  		addAuthCredentialEnvKeys(protectedAuthEnvKeys, methodId, credential);
-@@ -3178,10 +3285,10 @@
+@@ -3178,10 +3286,11 @@
  	const configCredentials = authCredentials ?? {};
  	return configCredentials[methodId] ?? configCredentials[toEnvToken(methodId)];
  }
@@ -232,11 +236,12 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  	return {
  		cwd,
 -		env: buildAgentEnvironment(authCredentials, sessionEnv),
++		detached: process.platform !== "win32",
 +		env: buildAgentEnvironment(authCredentials, sessionEnv, spawnEnvironment),
  		stdio: [
  			"pipe",
  			"pipe",
-@@ -3286,28 +3393,12 @@
+@@ -3286,28 +3395,12 @@
  	const ids = models?.availableModels.map((model) => model.modelId.trim()).filter((modelId) => modelId.length > 0) ?? [];
  	return ids.length > 0 ? ids.join(", ") : "none advertised";
  }
@@ -266,7 +271,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  }
  //#endregion
  //#region src/acp/session-control-errors.ts
-@@ -3961,10 +4052,13 @@
+@@ -3961,10 +4054,13 @@
  			...params.elicitationModes.includes("url") ? { url: {} } : {}
  		} } : {}
  	};
@@ -282,7 +287,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  	};
  }
  function hasResponseField(response, field) {
-@@ -4067,6 +4161,27 @@
+@@ -4067,6 +4163,27 @@
  		} })
  	};
  }
@@ -310,7 +315,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  var AcpClient = class {
  	options;
  	connection;
-@@ -4105,7 +4220,9 @@
+@@ -4105,7 +4222,9 @@
  			cwd: asAbsoluteCwd(options.cwd),
  			authPolicy: options.authPolicy ?? "skip",
  			permissionPolicy: snapshotPermissionPolicy(options.permissionPolicy),
@@ -321,18 +326,23 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  		};
  		this.eventHandlers = {
  			onAcpMessage: this.options.onAcpMessage,
-@@ -4216,9 +4333,21 @@
+@@ -4211,14 +4330,26 @@
+ 		this.logAgentLaunch(launch);
+ 		await this.ensureLaunchSupport(launch);
+ 		const child = await this.spawnAgentProcess(launch);
++		this.agent = child;
++		try {
+ 		this.closing = false;
+ 		this.agentStartedAt = isoNow$1();
  		this.lastAgentExit = void 0;
  		this.lastKnownPid = child.pid ?? void 0;
  		this.attachAgentLifecycleObservers(child);
 +		if (this.options.onAgentSpawn) {
 +			try {
 +				if (!child.pid) throw new Error("ACPX agent spawn did not expose a valid process id.");
-+				await this.options.onAgentSpawn({ pid: child.pid, startedAt: this.agentStartedAt });
++				await this.options.onAgentSpawn({ pid: child.pid, processGroupId: processGroupId(child), startedAt: this.agentStartedAt });
 +			} catch (error) {
-+				try {
-+					child.kill("SIGKILL");
-+				} catch {}
++				await this.terminateAgentProcess(child);
 +				throw error;
 +			}
 +		}
@@ -343,7 +353,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  			if (!this.options.verbose) return;
  			process.stderr.write(chunk);
  		});
-@@ -4226,6 +4355,7 @@
+@@ -4226,6 +4357,7 @@
  		const output = Readable.toWeb(child.stdout);
  		const stream = this.createTappedStream(createNdJsonMessageStream(this.options.agentCommand, input, output));
  		const connection = this.createConnection(stream, launch);
@@ -351,7 +361,18 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  		connection.signal.addEventListener("abort", () => {
  			this.recordAgentExit("connection_close", child.exitCode ?? null, child.signalCode ?? null);
  		}, { once: true });
-@@ -4253,7 +4383,12 @@
+@@ -4237,6 +4369,10 @@
+ 			startupStderr,
+ 			launch
+ 		});
++		} catch (error) {
++			await this.terminateAgentProcess(child);
++			throw error;
++		}
+ 	}
+ 	async resolveAgentLaunchPlan() {
+ 		const configuredCommand = resolveAgentCommandParts(this.options.agentCommand, this.options.agentArgv);
+@@ -4253,7 +4389,12 @@
  			geminiAcp: isGeminiAcpCommand(spawnCommand, args),
  			copilotAcp: isCopilotAcpCommand(spawnCommand, args),
  			claudeAcp: isClaudeAcpCommand(spawnCommand, args),
@@ -365,7 +386,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  		};
  	}
  	logAgentLaunch(plan) {
-@@ -4279,10 +4414,17 @@
+@@ -4279,24 +4420,33 @@
  	}
  	async spawnAgentProcess(plan) {
  		const spawnCommand = buildAgentSpawnCommand(plan.spawnCommand, plan.args, process.platform, plan.spawnOptions.env);
@@ -382,10 +403,16 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
 +				options
 +			})
 +			: spawn(spawnCommand.command, spawnCommand.args, options);
++		if (!this.options.spawnAgent && options.detached === true) ownProcessGroup(spawnedChild);
  		try {
  			await waitForSpawn$1(spawnedChild);
++			return requireAgentStdio(spawnedChild);
  		} catch (error) {
-@@ -4293,10 +4435,10 @@
++			if (processGroupId(spawnedChild) !== null) await this.terminateAgentProcess(spawnedChild);
+ 			throw new AgentSpawnError(this.options.agentCommand, error);
+ 		}
+-		return requireAgentStdio(spawnedChild);
+ 	}
  	createConnection(stream, launch) {
  		const app = client({ name: "acpx" }).onNotification(methods.client.session.update, async ({ params }) => {
  			await this.handleSessionUpdate(params);
@@ -399,7 +426,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  		}).onRequest(methods.client.fs.readTextFile, async ({ params }) => {
  			return await this.handleReadTextFile(params);
  		}).onRequest(methods.client.fs.writeTextFile, async ({ params }) => {
-@@ -4312,6 +4454,11 @@
+@@ -4312,6 +4462,11 @@
  		}).onRequest(methods.client.terminal.release, async ({ params }) => {
  			return await this.handleReleaseTerminal(params);
  		});
@@ -411,7 +438,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  		if (launch.devinAcp) app.onRequest("_cognition.ai/request_diagnostics", (params) => {
  			return params && typeof params === "object" && !Array.isArray(params) ? params : {};
  		}, async () => ({}));
-@@ -4333,12 +4480,12 @@
+@@ -4333,12 +4488,12 @@
  	async initializeProtocolConnection(connection, launch) {
  		const initializePromise = connection.initialize({
  			protocolVersion: PROTOCOL_VERSION,
@@ -426,7 +453,18 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  			clientInfo: resolveClientInfo(launch.devinAcp)
  		});
  		const initialized = launch.geminiAcp ? await withTimeout(initializePromise, resolveGeminiAcpStartupTimeoutMs()) : await initializePromise;
-@@ -4358,6 +4505,49 @@
+@@ -4348,9 +4503,7 @@
+ 	async handleInitializeFailure(params, error) {
+ 		params.startupFailure.dispose();
+ 		const normalizedError = await this.normalizeInitializeError(error, params.child, params.startupStderr);
+-		try {
+-			params.child.kill();
+-		} catch {}
++		await this.terminateAgentProcess(params.child);
+ 		if (params.launch.geminiAcp && error instanceof TimeoutError) throw new GeminiAcpStartupTimeoutError(await buildGeminiAcpStartupTimeoutMessage(params.launch.spawnCommand), {
+ 			cause: error,
+ 			retryable: true
+@@ -4358,6 +4511,49 @@
  		throw normalizedError;
  	}
  	createTappedStream(base) {
@@ -476,7 +514,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  		const onAcpMessage = () => this.eventHandlers.onAcpMessage;
  		const onAcpOutputMessage = () => this.eventHandlers.onAcpOutputMessage;
  		const elicitationRequestIds = /* @__PURE__ */ new Set();
-@@ -4367,8 +4557,12 @@
+@@ -4367,8 +4563,12 @@
  		const shouldSuppressInboundReplaySessionUpdate = (message) => {
  			return this.suppressReplaySessionUpdateMessages && isSessionUpdateNotification(message);
  		};
@@ -490,7 +528,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  			if (requestId !== void 0) {
  				elicitationRequestIds.add(requestId);
  				return;
-@@ -4379,6 +4573,7 @@
+@@ -4379,6 +4579,7 @@
  			}
  		};
  		return {
@@ -498,7 +536,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  			readable: new ReadableStream({ async start(controller) {
  				const reader = base.readable.getReader();
  				try {
-@@ -4386,16 +4581,27 @@
+@@ -4386,16 +4587,27 @@
  						const { value, done } = await reader.read();
  						if (done) break;
  						if (!value) continue;
@@ -528,7 +566,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  				const promptOwner = promptRequestOwner(message);
  				if (promptOwner) bindPromptOwner(promptOwner);
  				const id = responseId(message);
-@@ -4403,10 +4609,20 @@
+@@ -4403,10 +4615,20 @@
  					onAcpOutputMessage()?.("outbound", message);
  					onAcpMessage()?.("outbound", message);
  				}
@@ -549,7 +587,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  					writer.releaseLock();
  				}
  			} })
-@@ -4422,7 +4638,10 @@
+@@ -4422,7 +4644,10 @@
  			const createPromise = this.runConnectionRequest(() => connection.newSession({
  				cwd: sessionCwd,
  				mcpServers: this.options.mcpServers ?? [],
@@ -561,7 +599,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  			}));
  			result = claudeAcp ? await withTimeout(createPromise, resolveClaudeAcpSessionCreateTimeoutMs()) : await createPromise;
  		} catch (error) {
-@@ -4454,6 +4673,7 @@
+@@ -4454,6 +4679,7 @@
  	}
  	async loadSessionWithOptions(sessionId, cwd = this.options.cwd, options = {}) {
  		const connection = this.getConnection();
@@ -569,7 +607,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  		const sessionCwd = await resolveAgentSessionCwd(cwd, this.options.agentCommand);
  		const previousSuppression = this.applySessionUpdateSuppression(Boolean(options.suppressReplayUpdates));
  		let response;
-@@ -4461,7 +4681,9 @@
+@@ -4461,7 +4687,9 @@
  			response = await this.runConnectionRequest(() => connection.loadSession({
  				sessionId,
  				cwd: sessionCwd,
@@ -580,7 +618,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  			}));
  			await this.waitForSessionUpdateDrain(options.replayIdleMs ?? REPLAY_IDLE_MS, options.replayDrainTimeoutMs ?? REPLAY_DRAIN_TIMEOUT_MS);
  		} finally {
-@@ -4474,11 +4696,14 @@
+@@ -4474,11 +4702,14 @@
  	}
  	async resumeSession(sessionId, cwd = this.options.cwd) {
  		const connection = this.getConnection();
@@ -596,7 +634,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  		}));
  		this.loadedSessionId = sessionId;
  		const result = toReconnectedSessionResult(response);
-@@ -4590,15 +4815,17 @@
+@@ -4590,15 +4821,17 @@
  			throw maybeWrapSessionControlError("session/set_config_option", error, `for "${configId}"="${value}"`);
  		}
  	}
@@ -620,7 +658,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  	}
  	async setSessionModelThroughConfig(sessionId, modelId, configId) {
  		const connection = this.getConnection();
-@@ -4608,7 +4835,9 @@
+@@ -4608,7 +4841,9 @@
  				configId,
  				value: modelId
  			}));
@@ -631,7 +669,22 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  			return response;
  		} catch (error) {
  			return this.throwSessionModelError("session/set_config_option", modelId, error);
-@@ -4864,7 +5093,7 @@
+@@ -4747,6 +4982,14 @@
+ 		this.connection?.close?.();
+ 	}
+ 	async terminateAgentProcess(child) {
++		if (processGroupId(child) !== null) {
++			try {
++				await closeOwnedProcessGroup(child, resolveAgentCloseAfterStdinEndMs(this.options.agentCommand));
++			} finally {
++				this.detachAgentHandles(child, isChildProcessRunning(child));
++			}
++			return;
++		}
+ 		const stdinCloseGraceMs = resolveAgentCloseAfterStdinEndMs(this.options.agentCommand);
+ 		this.endAgentStdin(child);
+ 		let exited = await waitForChildExit(child, stdinCloseGraceMs);
+@@ -4864,7 +5107,7 @@
  	}
  	selectAuthMethod(methods) {
  		for (const method of methods) {
@@ -640,7 +693,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  			if (envCredential) return {
  				methodId: method.id,
  				credential: envCredential,
-@@ -4890,7 +5119,7 @@
+@@ -4890,7 +5133,7 @@
  	}
  	readAgentSpecificEnvCredential(methodId) {
  		if (!this.isGrokBuildAcpCommand() || methodId !== "xai.api_key") return;
@@ -649,7 +702,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  		return typeof value === "string" && value.trim().length > 0 ? value : void 0;
  	}
  	selectAgentManagedAuthMethod(methodId) {
-@@ -4915,9 +5144,9 @@
+@@ -4915,9 +5158,9 @@
  		await connection.authenticate({ methodId: selected.methodId });
  		this.log(`authenticated with method ${selected.methodId} (${selected.source})`);
  	}
@@ -661,7 +714,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  		if (hostResponse) return hostResponse;
  		const { response, recorded } = await this.resolvePermissionRequestFromMode(params);
  		if (!recorded) {
-@@ -4926,14 +5155,81 @@
+@@ -4926,14 +5169,81 @@
  		}
  		return response;
  	}
@@ -745,7 +798,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  		})).then((response) => ({
  			kind: "response",
  			response
-@@ -4970,7 +5266,7 @@
+@@ -4970,7 +5280,7 @@
  	isElicitationSessionCancelling(sessionId) {
  		return this.closing || this.cancellingSessionIds.has(sessionId);
  	}
@@ -754,7 +807,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  		if (!this.options.onPermissionRequest) return;
  		const signal = this.cancellationSignalForSession(params.sessionId);
  		try {
-@@ -4978,7 +5274,7 @@
+@@ -4978,7 +5288,7 @@
  				sessionId: params.sessionId,
  				raw: params,
  				inferredKind: inferToolKind(params)
@@ -763,7 +816,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  			return this.hostPermissionDecisionResponse(params, signal, decision);
  		} catch (error) {
  			return this.hostPermissionErrorResponse(params, signal, error);
-@@ -5028,6 +5324,12 @@
+@@ -5028,6 +5338,12 @@
  	attachAgentLifecycleObservers(child) {
  		child.once("exit", (exitCode, signal) => {
  			this.recordAgentExit("process_exit", exitCode, signal);
@@ -776,7 +829,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  		});
  		child.once("close", (exitCode, signal) => {
  			this.recordAgentExit("process_close", exitCode, signal);
-@@ -5100,6 +5402,9 @@
+@@ -5100,6 +5416,9 @@
  			return await this.filesystem.readTextFile(params);
  		} catch (error) {
  			this.recordPermissionError(params.sessionId, error);
@@ -786,7 +839,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  			throw error;
  		}
  	}
-@@ -5239,6 +5544,7 @@
+@@ -5239,6 +5558,7 @@
  	record.cumulative_token_usage = conversation.cumulative_token_usage;
  	record.cumulative_cost = conversation.cumulative_cost;
  	record.request_token_usage = conversation.request_token_usage;
@@ -794,7 +847,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  }
  //#endregion
  //#region src/runtime/engine/session-options.ts
-@@ -5701,7 +6007,8 @@
+@@ -5701,7 +6021,8 @@
  		updated_at: conversation.updated_at,
  		cumulative_token_usage: deepClone(conversation.cumulative_token_usage ?? {}),
  		cumulative_cost: cloneUsageCost(conversation.cumulative_cost),
@@ -804,7 +857,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  	};
  }
  function cloneUsageCost(cost) {
-@@ -5771,10 +6078,20 @@
+@@ -5771,10 +6092,20 @@
  	trimConversationForRuntime(conversation);
  	return acpx;
  }
@@ -827,7 +880,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  	updateConversationTimestamp(conversation, timestamp);
  	trimConversationForRuntime(conversation);
  	return true;
-@@ -6136,6 +6453,7 @@
+@@ -6136,6 +6467,7 @@
  	pendingAgentSessionId = loadState.pendingAgentSessionId;
  	sessionModels = loadState.sessionModels;
  	const preferenceReplay = await replayFreshSessionPreferences({
@@ -835,7 +888,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  		client,
  		record,
  		createdFreshSession,
-@@ -6193,14 +6511,16 @@
+@@ -6193,14 +6525,16 @@
  	if (shouldReconnect) process.stderr.write(`[acpx] saved session pid ${record.pid} is dead; respawning agent and attempting session reconnect\n`);
  }
  async function replayFreshSessionPreferences(params) {
@@ -854,7 +907,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  			client: params.client,
  			sessionId: params.sessionId,
  			desiredModeId: params.desiredModeId,
-@@ -6219,7 +6539,7 @@
+@@ -6219,7 +6553,7 @@
  			verbose: params.verbose,
  			suppressWarnings: params.suppressWarnings
  		});
@@ -863,7 +916,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  			client: params.client,
  			record: params.record,
  			sessionId: params.sessionId,
-@@ -6435,6 +6755,27 @@
+@@ -6435,6 +6769,27 @@
  //#region src/runtime/engine/prompt-turn.ts
  const SESSION_REPLY_IDLE_MS = 1e3;
  const SESSION_REPLY_DRAIN_TIMEOUT_MS = 5e3;
@@ -891,7 +944,7 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  async function runPromptTurn(params) {
  	try {
  		const promptPromise = params.client.prompt(params.sessionId, params.prompt, params.onPromptRequestStarted, params.onElicitation);
-@@ -6444,7 +6785,23 @@
+@@ -6444,7 +6799,23 @@
  			idleMs: SESSION_REPLY_IDLE_MS,
  			timeoutMs: SESSION_REPLY_DRAIN_TIMEOUT_MS
  		}).catch(() => {});
@@ -915,8 +968,69 @@ diff --git a/dist/live-checkpoint-BSIrfgVo.js b/dist/live-checkpoint-BSIrfgVo.js
  		return {
  			stopReason: response.stopReason,
  			source: "rpc"
+diff --git a/dist/owned-process-group.js b/dist/owned-process-group.js
+new file mode 100644
+--- /dev/null
++++ b/dist/owned-process-group.js
+@@ -0,0 +1,57 @@
++const groups = new WeakMap();
++const closes = new WeakMap();
++export function ownProcessGroup(child) {
++  if (process.platform !== "win32" && Number.isSafeInteger(child.pid) && child.pid > 1) {
++    groups.set(child, { id: child.pid, absent: false });
++  }
++}
++export function processGroupId(child) {
++  return groups.get(child)?.id ?? null;
++}
++function groupAlive(group) {
++  if (group.absent) return false;
++  try {
++    process.kill(-group.id, 0);
++    return true;
++  } catch (error) {
++    if (error.code !== "ESRCH") throw error;
++    group.absent = true;
++    return false;
++  }
++}
++function parentExited(child) {
++  return child.exitCode !== null || child.signalCode !== null;
++}
++async function waitForSettlement(child, group, milliseconds) {
++  const deadline = performance.now() + milliseconds;
++  do {
++    if (!groupAlive(group) && parentExited(child)) return true;
++    const remaining = deadline - performance.now();
++    if (remaining <= 0) return false;
++    await new Promise(resolve => setTimeout(resolve, Math.min(25, remaining)));
++  } while (true);
++}
++export function closeOwnedProcessGroup(child, stdinGraceMs = 100) {
++  if (closes.has(child)) return closes.get(child);
++  const group = groups.get(child);
++  if (!group) return Promise.reject(new Error("ACPX has no authority over this process group"));
++  const close = (async () => {
++    try { child.stdin?.end(); } catch {}
++    if (await waitForSettlement(child, group, stdinGraceMs)) return;
++    for (const [signal, grace] of [["SIGTERM", 1500], ["SIGKILL", 1000]]) {
++      if (groupAlive(group)) {
++        try { process.kill(-group.id, signal); }
++        catch (error) {
++          if (error.code !== "ESRCH") throw error;
++          group.absent = true;
++        }
++      }
++      if (await waitForSettlement(child, group, grace)) return;
++    }
++    const error = new Error("ACPX process group did not settle within the shutdown deadline");
++    error.code = "ACPX_PROCESS_GROUP_UNSETTLED";
++    throw error;
++  })();
++  closes.set(child, close);
++  return close;
++}
 diff --git a/dist/runtime.d.ts b/dist/runtime.d.ts
-index e8102acb0..377c5d838 100644
 --- a/dist/runtime.d.ts
 +++ b/dist/runtime.d.ts
 @@ -1,7 +1,8 @@
@@ -929,7 +1043,7 @@ index e8102acb0..377c5d838 100644
  //#region src/agent-registry.d.ts
  declare const DEFAULT_AGENT_NAME = "codex";
  //#endregion
-@@ -44,6 +45,7 @@ type AcpRuntimeTurnAttachment = {
+@@ -44,6 +45,7 @@
    data: string;
  };
  type AcpRuntimeTurnInput = {
@@ -937,7 +1051,7 @@ index e8102acb0..377c5d838 100644
    handle: AcpRuntimeHandle;
    text: string;
    attachments?: AcpRuntimeTurnAttachment[];
-@@ -141,6 +143,11 @@ type AcpTextDeltaOriginMeta = {
+@@ -141,6 +143,11 @@
    kind?: string;
    source?: string;
  };
@@ -949,7 +1063,7 @@ index e8102acb0..377c5d838 100644
  type AcpRuntimeEvent = {
    type: "text_delta";
    text: string;
-@@ -186,6 +193,10 @@ type AcpRuntimeEvent = {
+@@ -186,6 +193,10 @@
     * non-null `input` schema.
     */
    availableCommands?: AcpRuntimeAvailableCommand[];
@@ -960,7 +1074,7 @@ index e8102acb0..377c5d838 100644
  } | {
    type: "tool_call";
    text: string;
-@@ -312,7 +323,51 @@ type AcpRuntimeOptions = {
+@@ -312,7 +323,51 @@
    elicitationModes?: readonly AcpElicitationMode[];
    onPermissionRequest?: (req: AcpPermissionRequest, ctx: {
      signal: AbortSignal;
@@ -988,7 +1102,7 @@ index e8102acb0..377c5d838 100644
 +    args: readonly string[];
 +    options: SpawnOptionsWithoutStdio;
 +  }) => ChildProcess;
-+  onAgentSpawn?: (meta: { pid: number; startedAt: string }) => Promise<void> | void;
++  onAgentSpawn?: (meta: { pid: number; processGroupId: number | null; startedAt: string }) => Promise<void> | void;
 +  onAgentStderr?: (chunk: string) => void;
 +  onAgentExit?: (meta: {
 +    pid?: number;
@@ -1012,7 +1126,7 @@ index e8102acb0..377c5d838 100644
  };
  type AcpFileSessionStoreOptions = {
    stateDir: string;
-@@ -369,6 +424,7 @@ declare class AcpRuntimeManager {
+@@ -369,6 +424,7 @@
    private createAndSaveRuntimeRecord;
    private retainInitializedSessionOwner;
    startTurn(input: {
@@ -1020,7 +1134,7 @@ index e8102acb0..377c5d838 100644
      handle: AcpRuntimeHandle;
      text: string;
      attachments?: AcpRuntimeTurnAttachment[];
-@@ -414,6 +470,7 @@ declare class AcpRuntimeManager {
+@@ -414,6 +470,7 @@
    private cleanupRuntimeTurn;
    private finalizeRuntimeTurnRecord;
    runTurn(input: {
@@ -1029,10 +1143,9 @@ index e8102acb0..377c5d838 100644
      text: string;
      attachments?: AcpRuntimeTurnAttachment[];
 diff --git a/dist/runtime.js b/dist/runtime.js
-index a1f4a70a0..a17fce3b3 100644
 --- a/dist/runtime.js
 +++ b/dist/runtime.js
-@@ -153,7 +153,7 @@ function resolveTextChunk(params) {
+@@ -153,7 +153,7 @@
  		const contentType = asTrimmedString(contentRaw.type);
  		if (contentType && contentType !== "text") return null;
  		const text = asString(contentRaw.text);
@@ -1041,7 +1154,7 @@ index a1f4a70a0..a17fce3b3 100644
  			type: "text_delta",
  			text,
  			stream: params.stream,
-@@ -162,7 +162,7 @@ function resolveTextChunk(params) {
+@@ -162,7 +162,7 @@
  		};
  	}
  	const text = asString(params.payload.text);
@@ -1050,7 +1163,7 @@ index a1f4a70a0..a17fce3b3 100644
  	return {
  		type: "text_delta",
  		text,
-@@ -371,7 +371,7 @@ const PROMPT_EVENT_PARSERS = {
+@@ -371,7 +371,7 @@
  	current_mode_update: (payload) => statusUpdateEvent("current_mode_update", payload),
  	config_option_update: (payload) => statusUpdateEvent("config_option_update", payload),
  	session_info_update: (payload) => statusUpdateEvent("session_info_update", payload),
@@ -1059,10 +1172,11 @@ index a1f4a70a0..a17fce3b3 100644
  	client_operation: clientOperationEvent,
  	update: updateStatusEvent,
  	done: () => null,
-@@ -424,6 +424,34 @@ function availableCommandsUpdateEvent(payload) {
+@@ -423,6 +423,34 @@
+ 		tag: "available_commands_update",
  		availableCommands
  	};
- }
++}
 +function persistedGoalCapability(goal) {
 +	if (!isRecord(goal) || goal.version !== 1 || goal.controlMethod !== "_session/goal" || !Array.isArray(goal.actions)) return;
 +	const actions = goal.actions.filter((action) => ["set", "pause", "resume", "clear"].includes(action));
@@ -1090,11 +1204,10 @@ index a1f4a70a0..a17fce3b3 100644
 +		entries.push({ content, status, ...priority ? { priority } : {} });
 +	}
 +	return { type: "plan", tag: "plan", entries };
-+}
+ }
  function normalizeUsageCost(value) {
  	if (!isRecord(value)) return;
- 	const amount = asOptionalFiniteNumber(value.amount);
-@@ -812,7 +840,22 @@ var AcpRuntimeManager = class {
+@@ -812,7 +840,22 @@
  		this.deps = deps;
  	}
  	createClient(options) {
@@ -1118,7 +1231,7 @@ index a1f4a70a0..a17fce3b3 100644
  	}
  	createSessionOwner(input) {
  		const owner = {
-@@ -821,12 +864,16 @@ var AcpRuntimeManager = class {
+@@ -821,12 +864,16 @@
  			pendingSessionUpdates: []
  		};
  		input.client.setEventHandlers({
@@ -1135,7 +1248,7 @@ index a1f4a70a0..a17fce3b3 100644
  		const active = owner.activeTurn;
  		if (active) {
  			const { task, turn } = active;
-@@ -863,6 +910,9 @@ var AcpRuntimeManager = class {
+@@ -863,6 +910,9 @@
  		projection.checkpoint.request();
  	}
  	routeOwnedClientOperation(owner, operation) {
@@ -1145,7 +1258,7 @@ index a1f4a70a0..a17fce3b3 100644
  		const active = owner.activeTurn;
  		if (!active) return;
  		const { task, turn } = active;
-@@ -1008,6 +1058,8 @@ var AcpRuntimeManager = class {
+@@ -1008,6 +1058,8 @@
  		record.closedAt = void 0;
  		record.protocolVersion = owner.client.initializeResult?.protocolVersion;
  		record.agentCapabilities = owner.client.initializeResult?.agentCapabilities;
@@ -1154,7 +1267,7 @@ index a1f4a70a0..a17fce3b3 100644
  		applyLifecycleSnapshotToRecord(record, owner.client.getAgentLifecycleSnapshot());
  	}
  	async finishBufferedOwnerControl(owner, record) {
-@@ -1086,6 +1138,11 @@ var AcpRuntimeManager = class {
+@@ -1086,6 +1138,11 @@
  		record.closed = false;
  		record.closedAt = void 0;
  		this.closingActiveRecords.delete(record.acpxRecordId);
@@ -1166,7 +1279,7 @@ index a1f4a70a0..a17fce3b3 100644
  		await this.options.sessionStore.save(record);
  		return record;
  	}
-@@ -1149,6 +1206,8 @@ var AcpRuntimeManager = class {
+@@ -1149,6 +1206,8 @@
  		this.closingActiveRecords.delete(record.acpxRecordId);
  		record.protocolVersion = client.initializeResult?.protocolVersion;
  		record.agentCapabilities = client.initializeResult?.agentCapabilities;
@@ -1175,7 +1288,7 @@ index a1f4a70a0..a17fce3b3 100644
  		applyConfigOptionsToRecord(record, session.sessionResult);
  		const modelApplication = await applyRequestedModelIfAdvertised({
  			client,
-@@ -1301,9 +1360,11 @@ var AcpRuntimeManager = class {
+@@ -1301,9 +1360,11 @@
  				client: turn.client,
  				sessionId,
  				prompt: task.promptInput,
@@ -1187,7 +1300,7 @@ index a1f4a70a0..a17fce3b3 100644
  				onPromptRequestStarted: () => task.promptStarted.resolve(),
  				onElicitation: task.input.onElicitation
  			});
-@@ -1469,6 +1530,10 @@ var AcpRuntimeManager = class {
+@@ -1469,6 +1530,10 @@
  			setSessionConfigOption: async (configId, value) => {
  				return (await task.state.activeController.setResolvedSessionConfigOption(configId, value)).response;
  			},
@@ -1198,7 +1311,7 @@ index a1f4a70a0..a17fce3b3 100644
  			setResolvedSessionConfigOption: async (configId, value) => await this.setRuntimeResolvedSessionConfigOption(task, turn, configId, value)
  		};
  	}
-@@ -1575,6 +1640,8 @@ var AcpRuntimeManager = class {
+@@ -1575,6 +1640,8 @@
  		reconcileAgentSessionId(turn.record, turn.record.agentSessionId);
  		turn.record.protocolVersion = turn.client.initializeResult?.protocolVersion;
  		turn.record.agentCapabilities = turn.client.initializeResult?.agentCapabilities;
@@ -1207,10 +1320,11 @@ index a1f4a70a0..a17fce3b3 100644
  		turn.record.acpx = turn.acpxState;
  		applyConversation(turn.record, turn.conversation);
  		applyLifecycleSnapshotToRecord(turn.record, turn.client.getAgentLifecycleSnapshot());
-@@ -1707,6 +1774,17 @@ var AcpRuntimeManager = class {
+@@ -1706,6 +1773,17 @@
+ 			applyDesiredConfigOptionToRecord(connectedRecord, configId, value);
  		});
  		await this.options.sessionStore.save(result.record);
- 	}
++	}
 +	async requestExtension(input) {
 +		const recordId = input.handle.acpxRecordId ?? input.handle.sessionKey;
 +		return await this.withManagerLock(this.runtimeOperationLocks, recordId, async () => {
@@ -1221,11 +1335,10 @@ index a1f4a70a0..a17fce3b3 100644
 +				return await client.requestExtension(input.method, input.params);
 +			})).value;
 +		});
-+	}
+ 	}
  	async cancel(handle) {
  		await this.activeControllers.get(handle.acpxRecordId ?? handle.sessionKey)?.requestCancelActivePrompt();
- 	}
-@@ -2055,6 +2133,7 @@ var AcpxRuntime = class {
+@@ -2055,6 +2133,7 @@
  		const turnPromise = this.getManager().then((manager) => manager.startTurn({
  			handle,
  			text: input.text,
@@ -1233,7 +1346,7 @@ index a1f4a70a0..a17fce3b3 100644
  			attachments: input.attachments,
  			mode: input.mode,
  			sessionMode: state.mode,
-@@ -2087,6 +2166,7 @@ var AcpxRuntime = class {
+@@ -2087,6 +2166,7 @@
  		yield* (await this.getManager()).runTurn({
  			handle,
  			text: input.text,
@@ -1241,10 +1354,11 @@ index a1f4a70a0..a17fce3b3 100644
  			attachments: input.attachments,
  			mode: input.mode,
  			sessionMode: state.mode,
-@@ -2119,6 +2199,14 @@ var AcpxRuntime = class {
+@@ -2118,6 +2198,14 @@
+ 	async setConfigOption(input) {
  		const { handle, state } = this.resolveManagerHandle(input.handle);
  		await (await this.getManager()).setConfigOption(handle, input.key, input.value, state.mode);
- 	}
++	}
 +	async requestExtension(input) {
 +		const { handle, state } = this.resolveManagerHandle(input.handle);
 +		return await (await this.getManager()).requestExtension({
@@ -1252,12 +1366,10 @@ index a1f4a70a0..a17fce3b3 100644
 +			handle,
 +			sessionMode: input.sessionMode ?? state.mode
 +		});
-+	}
+ 	}
  	async cancel(input) {
  		const { handle } = this.resolveManagerHandle(input.handle);
- 		await (await this.getManager()).cancel(handle);
 diff --git a/dist/session-options-DwRDODlr.d.ts b/dist/session-options-DwRDODlr.d.ts
-index c3da16452..40ae05653 100644
 --- a/dist/session-options-DwRDODlr.d.ts
 +++ b/dist/session-options-DwRDODlr.d.ts
 @@ -1,4 +1,5 @@
@@ -1266,7 +1378,7 @@ index c3da16452..40ae05653 100644
  //#region src/prompt-content.d.ts
  type PromptInput = ContentBlock[];
  //#endregion
-@@ -27,6 +28,8 @@ type AcpElicitationContext = {
+@@ -27,6 +28,8 @@
    requestId: JsonRpcId;
    /** Aborts with the request itself or its owning prompt turn/session. */
    signal: AbortSignal;
@@ -1275,7 +1387,7 @@ index c3da16452..40ae05653 100644
  };
  type AcpElicitationResponseMeta = {
    _meta?: Record<string, unknown> | null;
-@@ -116,6 +119,37 @@ type AcpClientOptions = {
+@@ -116,6 +119,37 @@
      };
      env?: Record<string, string>;
    };
@@ -1300,7 +1412,7 @@ index c3da16452..40ae05653 100644
 +    args: readonly string[];
 +    options: SpawnOptionsWithoutStdio;
 +  }) => ChildProcess;
-+  onAgentSpawn?: (meta: { pid: number; startedAt: string }) => Promise<void> | void;
++  onAgentSpawn?: (meta: { pid: number; processGroupId: number | null; startedAt: string }) => Promise<void> | void;
 +  onAgentStderr?: (chunk: string) => void;
 +  onAgentExit?: (meta: {
 +    pid?: number;
@@ -1313,7 +1425,7 @@ index c3da16452..40ae05653 100644
    onAcpMessage?: (direction: AcpMessageDirection, message: AcpJsonRpcMessage) => void;
    onAcpOutputMessage?: (direction: AcpMessageDirection, message: AcpJsonRpcMessage) => void;
    onSessionUpdate?: (notification: SessionNotification) => void;
-@@ -123,6 +157,8 @@ type AcpClientOptions = {
+@@ -123,6 +157,8 @@
    onPermissionEscalation?: (event: PermissionEscalationEvent) => void;
    onPermissionRequest?: (req: AcpPermissionRequest, ctx: {
      signal: AbortSignal;
@@ -1322,7 +1434,7 @@ index c3da16452..40ae05653 100644
    }) => Promise<AcpPermissionDecision | undefined>;
  };
  declare const SESSION_RECORD_SCHEMA: "acpx.session.v1";
-@@ -263,12 +299,16 @@ type SessionRecord = {
+@@ -263,12 +299,16 @@
    lastAgentDisconnectReason?: string;
    protocolVersion?: number;
    agentCapabilities?: AgentCapabilities;
