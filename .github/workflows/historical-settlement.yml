@@ -49,6 +49,10 @@ jobs:
           pnpm install --resolution-only --ignore-scripts --no-frozen-lockfile 2>&1 | tee verification-evidence/resolution.log
           pnpm install --frozen-lockfile 2>&1 | tee verification-evidence/install.log
           git diff -- pnpm-lock.yaml > verification-evidence/lockfile.diff
+      - name: Prepare regression package prerequisites
+        run: |
+          pnpm run preflight:workspace-links
+          pnpm --filter @paperclipai/plugin-sdk ensure-build-deps
       - name: Retained wake regression tests
         id: tests
         continue-on-error: true
