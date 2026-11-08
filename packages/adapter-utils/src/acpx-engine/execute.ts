@@ -4528,7 +4528,7 @@ export function createAcpxEngineExecutor(deps: AcpxEngineExecutorOptions = {}) {
             processIdentitySink.localProcess = prepared.processSessionBridge ? undefined : captureLocalProcess(meta.pid);
             await processIdentitySink.current?.({
               pid: meta.pid,
-              processGroupId: null,
+              processGroupId: prepared.processSessionBridge ? null : meta.processGroupId ?? null,
               startedAt: meta.startedAt,
             });
           },
@@ -4723,7 +4723,7 @@ export function createAcpxEngineExecutor(deps: AcpxEngineExecutorOptions = {}) {
           if (handle && cached && processIdentitySink.latest && ctx.onSpawn) {
             await ctx.onSpawn({
               pid: processIdentitySink.latest.pid,
-              processGroupId: null,
+              processGroupId: prepared.processSessionBridge ? null : processIdentitySink.latest.processGroupId ?? null,
               startedAt: processIdentitySink.latest.startedAt,
             });
           }
