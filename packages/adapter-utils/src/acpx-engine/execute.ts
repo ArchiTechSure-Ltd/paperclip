@@ -923,7 +923,7 @@ export function rewriteGeminiAcpFlagForVersion(commandShell: string, versionPart
   return commandShell
     .trim()
     .split(/\s+/)
-    .map((token) => (token =***REDACTED*** "--acp" ? "--experimental-acp" : token))
+    .map((token) => (token === "--acp" ? "--experimental-acp" : token))
     .join(" ");
 }
 
@@ -1344,7 +1344,7 @@ async function prepareCodexSkillRuntime(input: {
     typeof process.env.CODEX_HOME === "string" && process.env.CODEX_HOME.trim().length > 0
       ? path.resolve(process.env.CODEX_HOME.trim())
       : path.join(os.homedir(), ".codex");
-  const apiKey = ***REDACTED*** || input.env.CODEX_API_KEY?.trim()
+  const apiKey = input.env.OPENAI_API_KEY?.trim() || input.env.CODEX_API_KEY?.trim()
     || process.env.OPENAI_API_KEY?.trim() || process.env.CODEX_API_KEY?.trim();
   // Keep API-key auth separate from the company home used by subscription
   // agents, so one agent cannot switch another agent's login on its next turn.
@@ -2007,7 +2007,7 @@ async function buildRuntime(input: {
     type: "http",
     name: server.name,
     url: server.url,
-    headers: [{ name: "Authorization", value: `Bearer ***REDACTED***}` }],
+    headers: [{ name: "Authorization", value: `Bearer ${server.token}` }],
   }));
   // Resolve the wall-clock timeout through the shared execution-target
   // resolver so sandbox-backed runs pick up the 4h backstop default while
@@ -2095,7 +2095,8 @@ async function buildRuntime(input: {
     env.ANTHROPIC_CUSTOM_HEADERS = openRouterClaudeHeaders(env.ANTHROPIC_CUSTOM_HEADERS ?? process.env.ANTHROPIC_CUSTOM_HEADERS);
     resolvedAdapterEnv.ANTHROPIC_CUSTOM_HEADERS = env.ANTHROPIC_CUSTOM_HEADERS;
   }
-  if (authToken) env.PAPERCLIP_API_KEY = ***REDACTED***  if (input.ctx.observability) {
+  if (authToken) env.PAPERCLIP_API_KEY = authToken;
+  if (input.ctx.observability) {
     applyObservabilityEnvironment(env, input.ctx.observability);
   }
   // For the claude agent, set model via ANTHROPIC_MODEL at startup rather than
@@ -3088,12 +3089,12 @@ function renderApiAccessNote(env: Record<string, string>): string {
     "Normalize the base URL before adding API paths:",
     `  PAPERCLIP_API_BASE="\${PAPERCLIP_API_URL%/}"; PAPERCLIP_API_BASE="\${PAPERCLIP_API_BASE%/api}"`,
     "GET example:",
-    `  curl -s -H "Authorization: ***REDACTED*** "$PAPERCLIP_API_BASE/api/agents/me"`,
+    `  curl -s -H "Authorization: Bearer $PAPERCLIP_API_KEY" "$PAPERCLIP_API_BASE/api/agents/me"`,
   ];
   if (env.PAPERCLIP_TASK_ID) {
     lines.push(
       "Scoped issue comment example:",
-      `  curl -s -X POST -H "Authorization: ***REDACTED*** -H "Content-Type: application/json" -H "X-Paperclip-Run-Id: $PAPERCLIP_RUN_ID" -d '{"body":"Status update from agent."}' "$PAPERCLIP_API_BASE/api/issues/$PAPERCLIP_TASK_ID/comments"`,
+      `  curl -s -X POST -H "Authorization: Bearer $PAPERCLIP_API_KEY" -H "Content-Type: application/json" -H "X-Paperclip-Run-Id: $PAPERCLIP_RUN_ID" -d '{"body":"Status update from agent."}' "$PAPERCLIP_API_BASE/api/issues/$PAPERCLIP_TASK_ID/comments"`,
     );
   } else {
     lines.push("Use a real issue id from the current context before making issue write requests.");
@@ -5627,7 +5628,7 @@ export function createAcpxEngineExecutor(deps: AcpxEngineExecutorOptions = {}) {
       // run-minted API key is never revoked, so it stays valid and forces a
       // close-and-relaunch. It is a non-secret marker; the settlement reads only its
       // presence, and no report or reuse payload carries it.
-      const LIVE_RUN_SCOPED_API_KEY = "***REDACTED***";
+      const LIVE_RUN_SCOPED_API_KEY = "paperclip-run-scoped-api-key";
       // Record the final per-resource disposition report where a test can observe
       // it. The engine never reads it back.
       const recordDispositionReport = (report: SettlementDispositionReport): void => {
