@@ -61,10 +61,10 @@ jobs:
               pnpm --filter @paperclipai/paperclip-runner check:static 2>&1 | tee verification-evidence/test.log
               ;;
             server-5)
-              pnpm test:run:general -- --group general-server-without-chat --shard-index 4 --shard-count 12 2>&1 | tee verification-evidence/test.log
+              pnpm test:run:general -- --group general-server-without-chat-or-native-runner --shard-index 4 --shard-count 12 2>&1 | tee verification-evidence/test.log
               ;;
             server-7)
-              pnpm test:run:general -- --group general-server-without-chat --shard-index 6 --shard-count 12 2>&1 | tee verification-evidence/test.log
+              pnpm test:run:general -- --group general-server-without-chat-or-native-runner --shard-index 6 --shard-count 12 2>&1 | tee verification-evidence/test.log
               ;;
             chat-2)
               pnpm test:run:general -- --group general-chat --shard-index 1 --shard-count 3 2>&1 | tee verification-evidence/test.log
