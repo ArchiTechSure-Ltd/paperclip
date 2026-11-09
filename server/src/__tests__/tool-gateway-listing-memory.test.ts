@@ -109,7 +109,14 @@ describeEmbeddedPostgres("tool gateway listing memory", () => {
     }
     expect(policies.some((entry) => entry.approvalMode === "unattended")).toBe(true);
     expect(policies.some((entry) => entry.approvalMode === "prompt")).toBe(true);
-    expect(policies).toHaveLength(4);
+    expect(policies.filter((entry) => entry.name.startsWith("tool_"))).toEqual([
+      { name: "tool_0000", approvalMode: "prompt" },
+      { name: "tool_0003", approvalMode: "prompt" },
+      { name: "tool_0004", approvalMode: "unattended" },
+      { name: "tool_0005", approvalMode: "unattended" },
+    ]);
+    expect(policies.map((entry) => entry.name)).not.toContain("tool_0001");
+    expect(policies.map((entry) => entry.name)).not.toContain("tool_0002");
   });
 
   it("keeps query growth bounded with several connections", async () => {

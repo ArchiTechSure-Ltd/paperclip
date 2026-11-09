@@ -315,6 +315,26 @@ describe("codex execute", () => {
         runtimeMcp: {
           getServers: () => [
             {
+              name: "Paperclip projects",
+              url: "http://paperclip.local:3100/api/mcp/project-tools",
+              token: "project-run-token",
+              connectionId: "paperclip-project-tools",
+              tools: [
+                { name: "list_projects", approvalMode: "unattended" },
+                { name: "create_task", approvalMode: "unattended" },
+              ],
+            },
+            {
+              name: "Paperclip connections",
+              url: "http://paperclip.local:3100/mcp/runtime-tools",
+              token: "connection-run-token",
+              connectionId: "paperclip-runtime-tools",
+              tools: [
+                { name: "connections_search", approvalMode: "unattended" },
+                { name: "connection_request", approvalMode: "unattended" },
+              ],
+            },
+            {
               name: "github",
               url: "http://paperclip.local:3100/api/tool-gateway/gateways/gateway-1/mcp",
               token: "pcgw_secret-managed-token",
@@ -345,6 +365,12 @@ describe("codex execute", () => {
       expect(configText).toContain('[mcp_servers."paperclip-github".tools."pull_request_read"]');
       expect(configText).toContain('approval_mode = "approve"');
       expect(configText).toContain('[mcp_servers."paperclip-github".tools."create_issue"]');
+      expect(configText).toContain('[mcp_servers."paperclip-github".tools."create_issue"]\napproval_mode = "prompt"');
+      expect(configText).not.toContain("delete_repository");
+      expect(configText).toContain('enabled_tools = ["create_task", "list_projects"]');
+      expect(configText).toContain('[mcp_servers."paperclip-projects".tools."list_projects"]\napproval_mode = "approve"');
+      expect(configText).toContain('enabled_tools = ["connection_request", "connections_search"]');
+      expect(configText).toContain('[mcp_servers."paperclip-connections".tools."connections_search"]\napproval_mode = "approve"');
       expect(logs).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -354,6 +380,8 @@ describe("codex execute", () => {
         ]),
       );
       expect(JSON.stringify(logs)).not.toContain("pcgw_secret-managed-token");
+      expect(JSON.stringify(logs)).not.toContain("project-run-token");
+      expect(JSON.stringify(logs)).not.toContain("connection-run-token");
     } finally {
       if (previousHome === undefined) delete process.env.HOME;
       else process.env.HOME = previousHome;
