@@ -95,6 +95,13 @@ describeEmbeddedPostgres("tool gateway listing memory", () => {
 
   it("derives provider-neutral client approval modes from the effective gateway policy", async () => {
     const fixture = await createListingFixture(db, 6);
+    // This case exercises the effective policy snapshot, not shared-credential
+    // health. Keep the cached catalog visible if a concurrent health sweep marks
+    // the synthetic remote endpoint unavailable; execution still validates the
+    // responsible user's grant before any per-user tool call.
+    await db.update(toolConnections)
+      .set({ credentialPolicy: "per_user" })
+      .where(eq(toolConnections.id, fixture.connection.id));
     const service = createToolGatewayService(db);
     const input = { gatewayId: fixture.namedGateway.id, bearerToken: fixture.token.token };
     const visible = await service.listToolsForNamedGateway(input);
