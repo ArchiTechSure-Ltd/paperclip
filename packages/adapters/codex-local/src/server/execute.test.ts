@@ -87,6 +87,10 @@ describe("Codex managed MCP tool-policy snapshots", () => {
   it("distinguishes a missing snapshot from an intentionally empty authorised set", () => {
     expect(() => readManagedMcpToolPolicySnapshot(undefined, "missing"))
       .toThrow('Managed MCP gateway "missing" is missing its effective tool-policy snapshot');
+    expect(() => readManagedMcpToolPolicySnapshot([
+      { name: "read_item", approvalMode: "allow" },
+    ], "invalid"))
+      .toThrow('Managed MCP gateway "invalid" has an invalid tool policy at index 0');
     expect(readManagedMcpToolPolicySnapshot([], "empty")).toEqual([]);
     expect(readManagedMcpToolPolicySnapshot([
       { name: "read_item", approvalMode: "unattended" },
